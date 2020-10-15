@@ -18,38 +18,32 @@ main = blankCanvas 3000 { events = ["mousedown", "mouseup", "mousemove"] } $ \co
 
 loop :: DeviceContext -> CanvasState -> IO ()
 loop context state@(CanvasState (l:ls) mouseState) = do 
-    send context $ do 
-        save()
-        drawLine context l 
-        restore()
     state' <- handleEvent context state
     loop context state'
 
 handleEvent :: DeviceContext -> CanvasState -> IO CanvasState
 handleEvent context state@(CanvasState (l:ls) mouseState)= do 
     event <- wait context
-    return $ case (eType event, ePageXY event) of 
-        ("mousedown", Just (x,y)) -> CanvasState (((x,y):l):ls) MouseDown
-        ("mouseup", Just (x,y)) -> CanvasState ([]:l:ls) MouseUp
-        ("mousemove", Just (x,y)) -> if (mouseState == MouseUp) 
-                                        then state 
-                                        else (CanvasState (((x,y):l):ls) mouseState)
-        _ -> state
+    send context $ case (eType event, ePageXY event) of 
+        ("mousedown", Just (x,y)) -> do 
+            save()
+            moveTo(x,y)
+            restore()
+            return $ CanvasState (((x,y):l):ls) MouseDown
+        ("mouseup", Just (x,y)) -> return $ CanvasState ([]:l:ls) MouseUp
+        ("mousemove", Just (x,y)) -> 
+            if (mouseState == MouseUp) 
+                then return $ state 
+                else do 
+                    save()
+                    lineTo(x,y)
+                    lineWidth 10
+                    strokeStyle "red"
+                    stroke() 
+                    restore()
+                    return $ (CanvasState (((x,y):l):ls) mouseState)
+        _ -> return $ state
 
 
-drawLine :: DeviceContext -> [Coord] -> Canvas ()
-drawLine context [] = mempty
-drawLine context ((x,y):cs) = do 
-    moveTo (x,y)
-    drawLine' context cs 
-
-drawLine' :: DeviceContext -> [Coord] -> Canvas ()
-drawLine' context [] = mempty
-drawLine' context line@((x,y):cs) = do 
-    lineTo(x,y)
-    lineWidth 10
-    strokeStyle "red"
-    stroke() 
-    drawLine context line
 
 
