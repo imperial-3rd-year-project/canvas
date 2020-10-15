@@ -11,38 +11,42 @@ type Line = [Coord]
 
 data MouseState = MouseUp | MouseDown deriving Eq
 
-data CanvasState = CanvasState [Line] MouseState
+data CanvasState = CanvasState MouseState
 
 main :: IO ()
-main = blankCanvas 3000 { events = ["mousedown", "mouseup", "mousemove"] } $ \context -> loop context (CanvasState [[]] MouseUp)
+main = blankCanvas 3000 
+                   { events = ["mousedown", "mouseup", "mousemove"] } 
+                   (\context -> loop context (CanvasState MouseUp))
 
 loop :: DeviceContext -> CanvasState -> IO ()
-loop context state@(CanvasState (l:ls) mouseState) = do 
-    state' <- handleEvent context state
-    loop context state'
+loop context state = do 
+  state' <- handleEvent context state
+  loop context state'
 
 handleEvent :: DeviceContext -> CanvasState -> IO CanvasState
-handleEvent context state@(CanvasState (l:ls) mouseState)= do 
-    event <- wait context
-    send context $ case (eType event, ePageXY event) of 
-        ("mousedown", Just (x,y)) -> do 
-            save()
-            moveTo(x,y)
-            restore()
-            return $ CanvasState (((x,y):l):ls) MouseDown
-        ("mouseup", Just (x,y)) -> return $ CanvasState ([]:l:ls) MouseUp
-        ("mousemove", Just (x,y)) -> 
-            if (mouseState == MouseUp) 
-                then return $ state 
-                else do 
-                    save()
-                    lineTo(x,y)
-                    lineWidth 10
-                    strokeStyle "red"
-                    stroke() 
-                    restore()
-                    return $ (CanvasState (((x,y):l):ls) mouseState)
-        _ -> return $ state
+handleEvent context state@(CanvasState mouseState)= do 
+  event <- wait context
+  send context $ case (eType event, ePageXY event, mouseState) of
+    ("mousedown", Just (x, y), _) -> do
+      save ()
+      moveTo (x, y)
+      restore ()
+      return $ CanvasState MouseDown
+    
+    ("mousemove", Just (x,y), MouseDown) -> do
+      save ()
+      lineTo (x, y)
+      lineWidth 10
+      strokeStyle "black"
+      lineCap RoundCap
+      lineJoin RoundCorner
+      stroke ()
+      restore ()
+      return $ (CanvasState mouseState)
+
+    ("mouseup", Just (x,y), _) -> return $ CanvasState MouseUp
+
+    _ -> return $ state
 
 
 
