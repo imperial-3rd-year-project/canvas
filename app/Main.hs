@@ -11,27 +11,25 @@ type Line = [Coord]
 
 data MouseState = MouseUp | MouseDown deriving Eq
 
-data CanvasState = CanvasState MouseState
-
 main :: IO ()
 main = blankCanvas 3000 
                    { events = ["mousedown", "mouseup", "mousemove"] } 
-                   (\context -> loop context (CanvasState MouseUp))
+                   (\context -> loop context MouseUp)
 
-loop :: DeviceContext -> CanvasState -> IO ()
+loop :: DeviceContext -> MouseState -> IO ()
 loop context state = do 
   state' <- handleEvent context state
   loop context state'
 
-handleEvent :: DeviceContext -> CanvasState -> IO CanvasState
-handleEvent context state@(CanvasState mouseState)= do 
+handleEvent :: DeviceContext -> MouseState -> IO MouseState
+handleEvent context mouseState= do 
   event <- wait context
   send context $ case (eType event, ePageXY event, mouseState) of
     ("mousedown", Just (x, y), _) -> do
       save ()
       moveTo (x, y)
       restore ()
-      return $ CanvasState MouseDown
+      return $ MouseDown
     
     ("mousemove", Just (x,y), MouseDown) -> do
       save ()
@@ -42,11 +40,11 @@ handleEvent context state@(CanvasState mouseState)= do
       lineJoin RoundCorner
       stroke ()
       restore ()
-      return $ (CanvasState mouseState)
+      return $ mouseState
 
-    ("mouseup", Just (x,y), _) -> return $ CanvasState MouseUp
+    ("mouseup", Just (x,y), _) -> return $ MouseUp
 
-    _ -> return $ state
+    _ -> return $ mouseState
 
 
 
