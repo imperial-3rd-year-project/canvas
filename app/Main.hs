@@ -14,7 +14,7 @@ data MouseState = MouseUp | MouseDown deriving Eq
 main :: IO ()
 main = blankCanvas 3000 
                    { events = ["mousedown", "mouseup", "mousemove"] } 
-                   (\context -> loop context MouseUp)
+                   (\context -> do loop context MouseUp)
 
 loop :: DeviceContext -> MouseState -> IO ()
 loop context state = do 
@@ -34,10 +34,10 @@ handleEvent context mouseState= do
     ("mousemove", Just (x,y), MouseDown) -> do
       save ()
       lineTo (x, y)
-      lineWidth 10
-      strokeStyle "black"
-      lineCap RoundCap
-      lineJoin RoundCorner
+    --   lineWidth 10
+    --   strokeStyle "black"
+    --   lineCap RoundCap
+    --   lineJoin RoundCorner
       stroke ()
       restore ()
       return $ mouseState
